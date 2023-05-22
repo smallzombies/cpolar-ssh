@@ -1,0 +1,86 @@
+import requests
+import re
+# 此位置为Xshell工具安装位置
+xshell_path = "D:/Program Files (x86)/NetSarang/Xshell 7/Xshell.exe"
+#user/pass
+username = 'root'
+password = 'xu123'
+# 使用requests库发送get请求，获取网页内容
+url = "https://dashboard.cpolar.com/login"
+# 添加请求头
+headers = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36 Edg/112.0.1722.68',
+    'Referer': 'https://dashboard.cpolar.com/',
+    'accept':'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+    'accept-encoding': 'gzip, deflate, br',
+    'accept-language': 'zh-CN,zh;q=0.9',
+    'cache-control': 'no-cache',
+    'pragma': 'no-cache',
+    'sec-ch-ua': '"Chromium";v="112", "Microsoft Edge";v="112", "Not:A-Brand";v="99"',
+    'sec-ch-ua-mobile': '?0',
+    'sec-ch-ua-platform': '"Windows"',
+    'sec-fetch-dest': 'document',
+    'sec-fetch-mode': 'navigate',
+    'sec-fetch-site': 'none',
+    'sec-fetch-user': '?1',
+    'upgrade-insecure-requests': '1',
+}
+#登录接口，GET，获取cookie
+response = requests.get(url,headers=headers)
+# 获取响应头
+html_headers = response.headers
+#print(html_headers) #调试GET，请求头，200
+#提取cookies
+cookies = response.cookies.get_dict()
+#print(cookies) # 调试cookie
+#提取csrf_token
+html_content = response.text
+# 使用正则表达式，从网页内容中匹配 name="csrf_token" value=""
+pattern = r'name="csrf_token" value="(.*?)"'
+match_obj = re.search(pattern, html_content)
+# 判断匹配结果是否成功，并输出
+if match_obj:
+    csrf_token = match_obj.group(1)
+    print(f"The CSRF token is: {csrf_token}")
+else:
+    print("Cannot find the CSRF token.")
+# 构造请求数据
+data = {
+    'login': '19103940670@163.com',
+    'password': 'xuzhaoli245016',
+    'csrf_token': csrf_token
+}
+# 合并请求头和请求数据
+headers.update({
+    'Content-Type': 'application/x-www-form-urlencoded',
+    'Origin': 'https://dashboard.cpolar.com',
+    'Referer': 'https://dashboard.cpolar.com/login'
+})
+# 发送登录请求
+response = requests.post(url, headers=headers, data=data, cookies=cookies)
+# 检查是否出现HTTP错误
+response.raise_for_status()
+#print(response.text)
+
+#状态查询，post请求，提取ssh动态地址
+#状态查询地址
+url = "https://dashboard.cpolar.com/status"
+response = requests.get(url,headers=headers,cookies=cookies)
+html_content = response.text
+#print(html_content) # 调试状态查询成功状态， 隧道名
+#提取 隧道名
+#使用正则表达式，从网页内容中匹配 <th scope="row"><a href="#ZgotmplZ" target="_blank">tcp://1.tcp.cpolar.cn:22148</a></th>
+pattern = r'<th scope="row"><a href="#ZgotmplZ" target="_blank">tcp://(.*?)</a></th>'
+match_obj = re.search(pattern,html_content)
+print(match_obj)
+# 判断匹配结果是否成功，并输出
+if match_obj:
+    ssh_address = match_obj.group(1)
+    print(f"The SSH_address is: {ssh_address}")
+else:
+    print("Cannot find the SSH_address")
+
+# 调起Xshell工具
+import time
+
+
